@@ -107,7 +107,9 @@ def analyze_profiles(img_fl,img_bf, pixelsizes_dict,Mic="Mic5",nuc_size=3,exclud
         zoom_factor = pixelsizes_dict["bf"] / px_um  # factor to zoom bf images to same scale as fl images
         img_bf = zoom(img_bf, zoom_factor)
     center_bf = np.array(np.shape(img_bf)) / 2
-    bf_include_mask = circle(int(center_bf[0]), int(center_bf[1]), int(np.min(center_bf)))
+    bf_include_mask = np.zeros(img_bf.shape)
+    bf_include_mask[circle(int(center_bf[0]), int(center_bf[1]), int(np.min(center_bf)))] = 1
+    bf_include_mask=bf_include_mask.astype(bool)
 
 
     center_fl = np.array(np.shape(img_fl)) / 2
@@ -116,7 +118,7 @@ def analyze_profiles(img_fl,img_bf, pixelsizes_dict,Mic="Mic5",nuc_size=3,exclud
     fl_include_mask = fl_include_mask.astype(bool)
 
     if isinstance(exclude_mask,np.ndarray):
-        fl_include_mask=np.logical(fl_include_mask,~exclude_mask)
+        fl_include_mask=np.logical_and(fl_include_mask,~exclude_mask)
     # segementation of blob and cells
     mask, img1, com_fl =  segmentation_gradient_dog(img_fl,fl_include_mask,nuc_size)
     blob_pre, com_bf = find_blob_bf(img_bf,bf_include_mask,pixelsize_bf)
@@ -188,7 +190,8 @@ def try_mask_load(db_path,type):
     try:
         db = clickpoints.DataFile(db_path,"r")
         id = db.getMaskType(type).index
-        mask = db.getMask(frame=0)==id
+        mask = db.getMask(frame=0).data==id
+        db.db.close()
     except:
         mask=None
     mask=mask if isinstance(mask,np.ndarray) else None
@@ -197,16 +200,18 @@ def try_mask_load(db_path,type):
 def set_up_database(output_filename_path,bf_img):
     path_file = os.path.splitext(output_filename_path)
     db_path=os.path.join(path_file[0] + ".cdb")
-    db = clickpoints.DataFile(db_path,"w")
-    db.setLayer("fl_images")
-    db.setLayer("bf_images")
-    db.setImage(output_filename_path,layer="fl_images",sort_index=0)
-    db.setImage(bf_img, layer="bf_images",sort_index=0) # TODO: does this work?
+    if not os.path.exists(db_path):
+        print("#############",db_path)
+        db = clickpoints.DataFile(db_path,"w")
+        db.setLayer("fl_images")
+        db.setLayer("bf_images")
+        db.setImage(output_filename_path,layer="fl_images",sort_index=0)
+        db.setImage(bf_img, layer="bf_images",sort_index=0) # TODO: does this work?
 
-    db.setMaskType("mask_cells", color="#1fff00", index=1)
-    db.setMaskType("mask_blob", color="#ff0f1b", index=2)
-    db.setMaskType("mask_exclude", color="#420420", index=3)
-    db.db.close()
+        db.setMaskType("mask_cells", color="#1fff00", index=1)
+        db.setMaskType("mask_blob", color="#ff0f1b", index=2)
+        db.setMaskType("mask_exclude", color="#420420", index=3)
+        db.db.close()
     return db_path
 
 
@@ -261,6 +266,7 @@ def get_mean_imgaes(output_filename_path,fl_files,file_bf,use_existing_mean_imag
             im = Image.fromarray(img_16bit)
             im.save(output_filename_path)
         # makeing a clickpoints database for excluding dirt and stuff
+
         db_path = set_up_database(output_filename_path, file_bf)
     return img_16bit, db_path
 
@@ -298,7 +304,7 @@ def spheroid_analysis_with_bf_core(inputfolder_path, save_images,use_existing_me
 
        # if not ("pos014" in files_fl[0]):
         #   continue
-        meta_info_dict = get_meta_info2(im_dict["files"][0], well=im_dict["well"], pos=im_dict["pos"])
+        meta_info_dict = get_meta_info2(im_dict["files"], well=im_dict["well"], pos=im_dict["pos"])
         # default output file for mean blended images
         mean_im_name="_".join(["Mean_Blend"]+[meta_info_dict[x] for x in ["date","well","pos"]]) + ".tif"
         output_filename_path = os.path.join(path_mean,mean_im_name)
@@ -324,6 +330,8 @@ def spheroid_analysis_with_bf_core(inputfolder_path, save_images,use_existing_me
         if cdb and analyze and save_images:
             cdb_mask=copy.deepcopy(mask)*1
             cdb_mask[blob]=2
+            if isinstance(exclude_mask,np.ndarray):
+                cdb_mask[exclude_mask]=3
             try:
                 db = clickpoints.DataFile(db_path,"r")
                 db.setMask(image=db.getImages()[0],data=np.array(cdb_mask,dtype="uint8"))
@@ -332,7 +340,7 @@ def spheroid_analysis_with_bf_core(inputfolder_path, save_images,use_existing_me
                 pass
 
 
-inputfolder_path = r'/media/user/GINA1-BK/raw_data_sph_invasion_example/'    # Insert input folder directory (Folder of Experiment, where SphInvasion and SphForce can be found)
+inputfolder_path = r'E:\Raw_data\C02_NaGr_002-005-04_CellScr_2020-01-20'    # Insert input folder directory (Folder of Experiment, where SphInvasion and SphForce can be found)
 save_images = True     #True save mean blended images
 analyze = True         # perform analysis
 
@@ -351,8 +359,7 @@ outputfolder_mode="mode1"
 nuc_size = 4 # maximal expected cell size in pixel
 cdb=True  #True set if cdb file with flourescent image and mask should be created
 
-add_folder="
-"
+add_folder="_test"
 if __name__ == '__main__':
     pixelsizes_dict={"bf":pixelsize_bf,"Mic2":pixelsize_fl_mic2,"Mic3":pixelsize_fl_mic3,"Mic5":pixelsize_fl_mic5} # dictionary containing all pixelizes, Mic2,3 and so on is identified from the filename
     spheroid_analysis_with_bf_core(inputfolder_path, save_images, use_existing_mean_images, analyze,

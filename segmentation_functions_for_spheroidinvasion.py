@@ -61,12 +61,12 @@ def segmentation_gradient_dog(img,include_mask,nuc_size=4):
     thresh_laplace = threshold_otsu(img_laplace[include_mask][img_laplace[include_mask] > 0])
 
     mask = img_laplace > thresh_laplace
-    mask=np.logiacl_and(mask,include_mask)
+    mask=np.logical_and(mask,include_mask)
     mask=binary_closing(mask)
     mask=binary_fill_holes(mask)
     mask=remove_small_objects(mask,2)
     mask_dog=img_dog>threshold_otsu(img_dog)
-    mask_dog=np.logiacl_and(mask_dog,include_mask)
+    mask_dog=np.logical_and(mask_dog,include_mask)
     mask_dog=remove_small_objects(mask_dog,10)
     mask_overlapp=mask_dog*2+mask
 
