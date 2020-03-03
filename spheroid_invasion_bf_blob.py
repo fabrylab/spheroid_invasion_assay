@@ -351,7 +351,8 @@ outputfolder_mode="mode1"
 nuc_size = 4 # maximal expected cell size in pixel
 cdb=True  #True set if cdb file with flourescent image and mask should be created
 
-add_folder="__test"
+add_folder="
+"
 if __name__ == '__main__':
     pixelsizes_dict={"bf":pixelsize_bf,"Mic2":pixelsize_fl_mic2,"Mic3":pixelsize_fl_mic3,"Mic5":pixelsize_fl_mic5} # dictionary containing all pixelizes, Mic2,3 and so on is identified from the filename
     spheroid_analysis_with_bf_core(inputfolder_path, save_images, use_existing_mean_images, analyze,
