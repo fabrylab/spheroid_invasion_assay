@@ -59,6 +59,10 @@ def collect_files(inputfolder_path,selector_path="SphInv",selectors_file=["rep",
             experiment = subdir
             files_dict[experiment] = {}
             print(experiment)
+        elif bf_check > 2 and not subdir in files_dict:
+            print("More than 2 folders matching either SphForce or SphInvasion are found!")
+            print("Following folders are found: " + dirs)
+            continue
 
         ## stops iteration if not in correct folder tree
         if not bf_check == 2 and "SphForce" not in subdir and "SphInv" not in subdir:  #
@@ -106,30 +110,23 @@ def collect_files(inputfolder_path,selector_path="SphInv",selectors_file=["rep",
 
 
 
-def analyze_profiles(img_fl,img_bf, pixelsize_bf,pixelsize_fl_mic3,pixelsize_fl_mic5,Mic="Mic5",nuc_size=3):
+def analyze_profiles(img_fl,img_bf,pixelsizes_dict,Mic="Mic5",nuc_size=3):
 
-
-
-    #zoom factors:
-    bf_mic5=pixelsize_bf
-    fl_mic3=pixelsize_fl_mic3
-    fl_mic5=pixelsize_fl_mic5
-    zoom_factor=bf_mic5/ fl_mic3 # factor to zoom bf images to same scale as fl images
-
+    # zoom factors:
     # read image
     img_fl = img_fl.astype(float)
     img_bf = img_bf.astype(float)
 
+    px_um=pixelsizes_dict[Mic]
     ## correct zoom diffrence by zoming out bf image
-    if Mic == "Mic3":
+    if Mic == "Mic3" or Mic == "Mic2":
+        zoom_factor = pixelsizes_dict["bf"] / px_um  # factor to zoom bf images to same scale as fl images
         img_bf_zoom = zoom(img_bf, zoom_factor)
         center = np.array(np.shape(img_bf_zoom )) / 2
         bf_crop_mask = circle(int(center[0]), int(center[1]), int(np.min(center)))
         IQR = np.percentile(  img_bf_zoom , 75) - np.percentile(  img_bf_zoom , 25)
         img_bf_crop = np.random.normal(loc=np.median(  img_bf_zoom ), scale=IQR / 13, size=np.shape( img_bf_zoom ))
         img_bf_crop[bf_crop_mask] = img_bf_zoom[bf_crop_mask]
-        px_um=pixelsize_fl_mic3
-
 
 
     # cutting circular shaped form
@@ -139,8 +136,6 @@ def analyze_profiles(img_fl,img_bf, pixelsize_bf,pixelsize_fl_mic3,pixelsize_fl_
         IQR = np.percentile(img_bf, 75) - np.percentile(img_bf, 25)
         img_bf_crop = np.random.normal(loc=np.median(img_bf), scale=IQR / 13, size=np.shape(img_bf))
         img_bf_crop[bf_crop_mask] = img_bf[bf_crop_mask]
-        px_um=pixelsize_fl_mic5
-
 
     center = np.array(np.shape(img_fl)) / 2
     fl_crop_mask=np.zeros(img_fl.shape)
@@ -223,7 +218,7 @@ def analyze_profiles(img_fl,img_bf, pixelsize_bf,pixelsize_fl_mic3,pixelsize_fl_
 
 
 def spheroid_analysis_with_bf_core(inputfolder_path, save_images,use_existing_mean_images, analyze,
-                                   pixelsize_bf,pixelsize_fl_mic3,pixelsize_fl_mic5,
+                                   pixelsizes_dict,
                                    outputfolder_mode,cdb):
 
 
@@ -262,11 +257,15 @@ def spheroid_analysis_with_bf_core(inputfolder_path, save_images,use_existing_me
                     print(files_fl[0])
                     print("!!! Position skipped !!!")
                     continue
-                print("using", files_fl[0], file_bf)
+                print("using", files_fl[0],"\n", file_bf)
 
+                #Insert here single positions to analyse
+                #if not ("pos014" in files_fl[0]):
+                    #continue
+                # Insert here single positions to skip
+                # if ("pos014" in files_fl[0]):
+                # continue
 
-                if not ("pos014" in files_fl[0]):
-                    continue
 
 
                 meta_info_dict = get_meta_info2(files_fl, well=key2, pos=key3)
@@ -296,9 +295,8 @@ def spheroid_analysis_with_bf_core(inputfolder_path, save_images,use_existing_me
 
                 if analyze:  # performing analysis on mean blended images
                     # try:
-                    res = analyze_profiles(img_fl=img_16bit, img_bf=img_bf,
-                                   pixelsize_bf=pixelsize_bf,pixelsize_fl_mic3=pixelsize_fl_mic3,
-                                           pixelsize_fl_mic5=pixelsize_fl_mic5, Mic=meta_info_dict["Mic"],nuc_size=nuc_size)
+                    res = analyze_profiles(img_fl=img_16bit, img_bf=img_bf
+                                   ,pixelsizes_dict=pixelsizes_dict, Mic=meta_info_dict["Mic"],nuc_size=nuc_size)
                     p, rad, inv_front, blob, mask, dens, dt, img, img1,px_um = res
                     plotting_invasion_profiles1(res, meta_info_dict,
                                                 outputfolder_path_profile,
@@ -330,7 +328,7 @@ def spheroid_analysis_with_bf_core(inputfolder_path, save_images,use_existing_me
 
 
 
-inputfolder_path = r'E:\Raw_data\C02_NaGr_002-005-04_CellScr_2020-01-20'    # Insert input folder directory (Folder of Experiment, where SphInvasion and SphForce can be found)
+inputfolder_path = r'E:\Raw_data\C02_NaGr_002-006-02_CellScr_2020-02-06'    # Insert input folder directory (Folder of Experiment, where SphInvasion and SphForce can be found)
 save_images = True     #True save mean blended images
 analyze = True         # perform analysis
 
@@ -339,18 +337,23 @@ analyze = True         # perform analysis
 use_existing_mean_images = True       #True, if mean_blend images already exist
 
 # general settings of measurement on microscope
-pixelsize_bf= 4.0965 / 4  # µm/pixel / magnification   ## same with bf_mic5
-pixelsize_fl_mic3= 6.45 / 2.5  # µm/pixel / magnification
-pixelsize_fl_mic5= 4.0965 / 4  # µm/pixel / magnification   ## same with bf_mic5
+pixelsize_bf = 4.0965 / 4  # µm/pixel / magnification   ## same with bf_mic5
+pixelsize_fl_mic2 = 6.45 / 2.5  # µm/pixel / magnification
+pixelsize_fl_mic3 = 6.45 / 2.5  # µm/pixel / magnification
+pixelsize_fl_mic5 = 4.0965 / 4  # µm/pixel / magnification   ## same with bf_mic5
 #outputfolder_mode="mode1" # will create outpfolder by replacing a folder "raw data" with "analyzed data and copy the folder structure deeper
 # mode2 will create outputfolder in the input directory
 outputfolder_mode="mode1"
 nuc_size = 4 # maximal expected cell size in pixel
 cdb=True  #True set if cdb file with flourescent image and mask should be created
 
+
+
 if __name__ == '__main__':
+    pixelsizes_dict={"bf":pixelsize_bf,"Mic2":pixelsize_fl_mic2,"Mic3":pixelsize_fl_mic3,"Mic5":pixelsize_fl_mic5} # dictionary containing all pixelizes, Mic2,3 and so on is identified from the filename
+    pixelsize_fl_mic3, pixelsize_fl_mic5
     spheroid_analysis_with_bf_core(inputfolder_path, save_images, use_existing_mean_images, analyze,
-                                   pixelsize_bf,pixelsize_fl_mic3,pixelsize_fl_mic5,
+                                   pixelsizes_dict,
                                    outputfolder_mode,cdb=True)
 
 
