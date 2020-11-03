@@ -1,12 +1,4 @@
 
-
-
-
-
-
-
-
-
 import re
 from glob import glob
 from scipy.ndimage import zoom
@@ -50,6 +42,10 @@ try:
     from segmentation_functions_for_spheroidinvasion import *
 except:
     pass
+
+
+
+
 def collect_files(inputfolder_path, selector_path="SphInv", selectors_file=["rep", "Fluo"]):
     files_dict = {}
     for subdir, dirs, files in os.walk(inputfolder_path):
@@ -111,11 +107,10 @@ def analyze_profiles(img_fl, px_um, Mic="Mic5", nuc_size=3):
     # read image
     img_fl = img_fl.astype(float)
     # cutting circular shaped form
-    center=np.array(np.shape(img_fl))/2
-    fl_crop_mask=circle(int(center[0]),int(center[1]),int(np.min(center)))
-    img_fl_crop =np.zeros(np.shape( img_fl))+np.median( img_fl)
-    img_fl_crop[fl_crop_mask]= img_fl [fl_crop_mask]
-
+    center = np.array(np.shape(img_fl))/2
+    fl_crop_mask = circle(int(center[0]),int(center[1]),int(np.min(center)))
+    img_fl_crop = np.zeros(np.shape( img_fl))+np.median( img_fl)
+    img_fl_crop[fl_crop_mask] = img_fl[fl_crop_mask]
 
 
    # img_fl_crop = img_fl[200:-200, 200:-200]
@@ -123,10 +118,6 @@ def analyze_profiles(img_fl, px_um, Mic="Mic5", nuc_size=3):
     # segementation of blob and cells
     mask, img1, com_fl = segmentation_gradient_dog(img_fl_crop, nuc_size)
     blob = find_blob_fl(img_fl_crop)
-
-
-
-
 
 
     # distance transform

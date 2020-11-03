@@ -117,8 +117,8 @@ def analyze_profiles(img_fl,img_bf, pixelsizes_dict,Mic="Mic5",nuc_size=3,exclud
     fl_include_mask[circle(int(center_fl[0]), int(center_fl[1]), int(np.min(center_fl)))] = 1
     fl_include_mask = fl_include_mask.astype(bool)
 
-    if isinstance(exclude_mask,np.ndarray):
-        fl_include_mask=np.logical_and(fl_include_mask,~exclude_mask)
+    if isinstance(exclude_mask, np.ndarray):
+        fl_include_mask = np.logical_and(fl_include_mask,~exclude_mask)
     # segementation of blob and cells
     mask, img1, com_fl =  segmentation_gradient_dog(img_fl,fl_include_mask,nuc_size)
     blob_pre, com_bf = find_blob_bf(img_bf,bf_include_mask,pixelsize_bf)

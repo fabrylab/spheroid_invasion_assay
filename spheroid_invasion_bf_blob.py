@@ -173,7 +173,7 @@ def analyze_profiles(img_fl,img_bf, pixelsize_bf,pixelsize_fl_mic3,pixelsize_fl_
                 int(com_fl[1]-lengths[1]/2 + displacement_blob_to_com_bf[1]),
                 int(com_fl[1]+lengths[1]/2 + displacement_blob_to_com_bf[1])
                 ]
-    corrected_blob[ new_cords1[0]: new_cords1[1], new_cords1[2]:new_cords1[3]]=blob_pre[rectangle[0][0],rectangle[0][1]]
+    corrected_blob[new_cords1[0]: new_cords1[1], new_cords1[2]:new_cords1[3]]=blob_pre[rectangle[0][0],rectangle[0][1]]
     blob= corrected_blob>0
 
 
