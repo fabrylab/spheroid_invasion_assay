@@ -58,7 +58,7 @@ def analyze_profiles(img_fl, pixel_size, nuc_size=3):
 
 if __name__ == "__main__":
     im = plt.imread("test_data/Mean_Blend__20180913-181321_Mic3_pos00_x0_y0_modeFluo1_z0.tif")
-    pixel_size = 2
+    pixel_size = 2 # in µm
     p, rad, inv_front, mask, dens, dt, img_fl, img1 = analyze_profiles(im, pixel_size, nuc_size=3)
 
 
