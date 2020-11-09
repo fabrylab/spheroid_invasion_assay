@@ -34,7 +34,7 @@ except:
     pass
 
 
-def segmentation_gradient_dog(img, include_mask, nuc_size=4):
+def segmentation_gradient_dog(img, include_mask, nuc_size=4, gauss1=0.4):
 
     '''
 
@@ -48,10 +48,10 @@ def segmentation_gradient_dog(img, include_mask, nuc_size=4):
 
     include_mask = include_mask.astype(bool)
     img1 = img - np.percentile(img[include_mask], 0.1)  # 1 Percentile
-    img1 = img1 / np.percentile(img1[include_mask], 99.9 )  # norm to 99 Percentile
+    img1 = img1 / np.percentile(img1[include_mask], 99.9)  # norm to 99 Percentile
     img1[img1 < 0] = 0.0
     img1[img1 > 1] = 1.0
-    img1 =gaussian_filter(img1,0.4)
+    img1 = gaussian_filter(img1, gauss1)
 
 
     img_laplace=laplace(img1)
@@ -61,13 +61,13 @@ def segmentation_gradient_dog(img, include_mask, nuc_size=4):
     thresh_laplace = threshold_otsu(img_laplace[include_mask][img_laplace[include_mask] > 0])
 
     mask = img_laplace > thresh_laplace
-    mask=np.logical_and(mask, include_mask)
-    mask=binary_closing(mask)
-    mask=binary_fill_holes(mask)
-    mask=remove_small_objects(mask,2)
-    mask_dog=img_dog>threshold_otsu(img_dog)
-    mask_dog=np.logical_and(mask_dog, include_mask)
-    mask_dog=remove_small_objects(mask_dog,10)
+    mask = np.logical_and(mask, include_mask)
+    mask = binary_closing(mask)
+    mask = binary_fill_holes(mask)
+    mask = remove_small_objects(mask, 2)
+    mask_dog = img_dog>threshold_otsu(img_dog)
+    mask_dog = np.logical_and(mask_dog, include_mask)
+    mask_dog = remove_small_objects(mask_dog, 10)
     mask_overlapp=mask_dog*2+mask
 
     mask_overlapp2 = copy.deepcopy(mask_overlapp)
